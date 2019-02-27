@@ -1,0 +1,233 @@
+---
+title: "Exercise1"
+author: "Dario Pedolin"
+date: "26 2 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if(!require("knitr")){
+  install.packages("knitr")
+  require("knitr")
+}
+if(!require("tidyverse")){
+  install.packages("tidyverse")
+  require("tidyverse")
+}
+if(!require("openxlsx")){
+  install.packages("openxlsx")
+  require("openxlsx")
+}
+
+
+
+source("../../util/functions.R")
+
+```
+
+
+
+
+## 1.1 Goal and system defintion
+
+### System boundaries
+  
+  * Spatial reference: Europe
+  * Time reference: 2019 - 2050
+  * Substantial reference: E-Bikes
+
+### Guiding questions
+	* Which impact factors and interrelations among them determine…
+	  * The penetration of different types of e-bikes and battery technologies on the EU market?
+	  * How the adoption of e-bikes changes the mobility behavior and what modes of transport are being replaced (substitution) to which extent?
+	  * in Europe in the year 2050.
+	* What scenarios can result from different constellations of the identified impact factors?
+	
+	By the way:
+	* What other consequences could a large scale adoption of e-bikes have?
+	* What factors could lead to a rebound effect?
+
+### Knowledge base
+	-
+	-
+### Actors to be involved
+	-
+### Target group
+	-
+
+
+## 2.1 Impact factors
+### preliminary identification:
+```{r prelimIF, echo=FALSE}
+# load csv and write its content to excel
+if(FALSE & file.exists("../../data/prelimImpactFactors.csv")){
+  prelimImpactFactors <- read.csv("../../data/prelimImpactFactors.csv", stringsAsFactors = FALSE)
+  prelimImpactFactors$Indicator <- NA
+  prelimImpactFactors$Current_Stat <- NA
+  
+  dataXlsxName <- "../../data/exerciseData.xlsx"
+  if(!file.exists(dataXlsxName)){
+    write.excel(data = prelimImpactFactors, file = "../../data/exerciseData.xlsx", sheetName = "preliminaryImpactFactors", rNames = FALSE)
+  } 
+  if(file.exists(dataXlsxName) & "preliminaryImpactFactors" %in% excel.sheets(dataXlsxName)){
+    write.excel(data = prelimImpactFactors, file = "../../data/exerciseData.xlsx", sheetName = "preliminaryImpactFactors", rNames = FALSE, append = TRUE, overwrite = TRUE)
+  }
+  if(file.exists(dataXlsxName) & !("preliminaryImpactFactors" %in% excel.sheets(dataXlsxName))){
+    write.excel(data = prelimImpactFactors, file = "../../data/exerciseData.xlsx", sheetName = "preliminaryImpactFactors", rNames = FALSE, append = TRUE)
+  }
+}
+# and use the excel
+prelimImpactFactors <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "preliminaryImpactFactors")
+
+prelimImpactFactorsList <- as.character(prelimImpactFactors$ImpactFactor)
+cols <- 3
+nrowPerCol <- ceiling(length(prelimImpactFactorsList)/cols)
+prelimImpFac <- c(prelimImpactFactorsList, rep("", each = cols * nrowPerCol - length(prelimImpactFactorsList)))
+prelimImpFacTab <- cbind(prelimImpFac[1:nrowPerCol], prelimImpFac[(nrowPerCol+1):(2*nrowPerCol)], prelimImpFac[(2*nrowPerCol+1):(3*nrowPerCol)])
+kable(prelimImpFacTab, caption = "Names of preliminary impact factors")
+
+
+```
+		
+
+	Impact factors structuring, clustering, relevance assessment
+	-
+	-
+	
+	Impact factors selection
+```{r finalIF, echo=FALSE}
+finalmpactFactors <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "preliminaryImpactFactors")
+finalmpactFactorsList <- as.character(finalmpactFactors$ImpactFactor)
+cols <- 3
+nrowPerCol <- ceiling(length(finalmpactFactorsList)/cols)
+impFac <- c(finalmpactFactorsList, rep(NA, each = cols * nrowPerCol - length(finalmpactFactorsList)))
+impFacTab <- cbind(impFac[1:nrowPerCol], impFac[(nrowPerCol+1):(2*nrowPerCol)], impFac[(2*nrowPerCol+1):(3*nrowPerCol)])
+# kable(impFacTab, caption = "Names of seleceted impact factors")
+kable(finalmpactFactors, caption="Description of seleceted impact factors")
+```
+	-
+	-
+	
+## 2.2 Impact assessment
+	m x m matrix of direct impacts
+	
+```{r updateImpactMatrix, echo=FALSE, warning=FALSE}
+
+mkeIFM <- function(IFList){
+  iMatrix <- matrix(0, nrow = length(IFList), ncol=length(IFList))
+  rownames(iMatrix) <- IFList
+  colnames(iMatrix) <- IFList
+  impactMatrix <- as.data.frame(iMatrix)
+  for(i in 1:nrow(impactMatrix)){
+    impactMatrix[i,i] <- NA
+  }
+}
+
+
+finalmpactFactorsList <- as.character(finalmpactFactors$ImpactFactor)
+
+dataXlsxName <- "../../data/exerciseData.xlsx"
+if(file.exists(dataXlsxName) & !("impactMatrix" %in% excel.sheets(dataXlsxName))){
+  impactMatrix <- mkeIFM(finalmpactFactorsList)
+  write.excel(data = impactMatrix, file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix", append = TRUE, rNames = TRUE)
+}
+
+# write updatet matrix if there are new impactFactors
+if(file.exists("../../data/exerciseData.xlsx") & ("impactMatrix" %in% excel.sheets(dataXlsxName))){
+  oldImpactMatrix <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix")
+  rownames(oldImpactMatrix) <- oldImpactMatrix[,1]
+  oldImpactMatrix <- oldImpactMatrix[,-1]
+  existingIFIndex <- which(rownames(oldImpactMatrix) %in% finalmpactFactorsList)
+  newIFNames <- finalmpactFactorsList[!(finalmpactFactorsList %in% rownames(oldImpactMatrix))]
+  newImpactMatrix <- oldImpactMatrix[existingIFIndex, existingIFIndex]
+  if(length(newImpactMatrix) == 0){
+    newImpactMatrix == mkeIFM(finalmpactFactorsList)
+  } else {
+    for(newIF in newIFNames) {
+      newData <- 0
+      newImpactMatrix <- cbind(newImpactMatrix, newData)
+      colnames(newImpactMatrix)[ncol(newImpactMatrix)] <- newIF
+      newImpactMatrix <- rbind(newImpactMatrix, newData)
+      rownames(newImpactMatrix)[nrow(newImpactMatrix)] <- newIF
+      newImpactMatrix[nrow(newImpactMatrix), ncol(newImpactMatrix)] <- NA
+    }
+  }
+  write.excel(data = newImpactMatrix, file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix", append = TRUE, overwrite = TRUE, rNames = TRUE)
+
+}
+```
+
+```{r impactMatrix, echo=FALSE, warning=FALSE}
+# always load from excel
+impactMatrix <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix")
+names(impactMatrix)[1] <- "ImpactFactor"
+impactMatrixPlot <- impactMatrix %>% 
+  gather(Dependend, value, -ImpactFactor) %>% 
+  mutate(value = factor(value)) %>% 
+  mutate(value = factor(value),
+         ImpactFactor = factor(ImpactFactor),
+         ImpactFactor = factor(ImpactFactor, levels = rev(levels(ImpactFactor)))) %>%
+  filter(!is.na(value)) %>% 
+  ggplot(aes(Dependend, ImpactFactor, fill=value)) +
+  geom_tile() +
+  scale_fill_manual(values = c("0" = mc(5), "1" = mc(4),"2" = mc(1)), na.value=mc(7))+
+  geom_text(aes(label = value)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+impactMatrixPlot
+  
+```
+	
+## 2.3 Impact analysis
+
+```{r activityPassivityScores, echo=FALSE}
+impactM <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix")
+rownames(impactM) <- impactM[,1]
+impactM <- impactM[,-1]
+impactM$ActivityScore <- rowSums(impactM, na.rm = TRUE)
+PassivityScore <- colSums(impactM, na.rm = TRUE)
+impactM <- rbind.data.frame(impactM, PassivityScore= PassivityScore)
+names(impactM) <- gsub(".", " ", names(impactM), fixed=TRUE)
+
+kable(impactM)
+
+```
+
+### System grid
+```{r plotSystemGrid, echo=FALSE}
+impactM <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix")
+rownames(impactM) <- impactM[,1]
+impactM <- impactM[,-1]
+impactM$ActivityScore <- rowSums(impactM, na.rm = TRUE)
+PassivityScore <- colSums(impactM, na.rm = TRUE)
+impactM <- rbind.data.frame(impactM, PassivityScore= PassivityScore)
+
+sysGridData <- impactM
+sysGridData$PassivityScore <- as.numeric(t(sysGridData[nrow(sysGridData),]))
+sysGridData$ImpactFactor <- rownames(sysGridData)
+sysGridData <- sysGridData %>%
+  select(ImpactFactor, ActivityScore, PassivityScore) %>%
+  filter(!(ImpactFactor %in% c("PassivityScore")))
+  
+library(ggrepel)
+
+sysGridData %>% 
+  ggplot(aes(ActivityScore, PassivityScore, label=ImpactFactor)) +
+  geom_point() +
+  geom_hline(aes(yintercept = mean(PassivityScore))) +
+  geom_vline(aes(xintercept = mean(ActivityScore))) +
+  geom_text_repel()
+
+
+```
+
+### Feedback loops
+###System structure
+	
+	
+## 3.1 Future level definition
+## 3.2 Consistency assessment
+## 3.3 Scenario construction
+## 4.1 Scenario selection
+## 4.2 Scenario description and interpretation
