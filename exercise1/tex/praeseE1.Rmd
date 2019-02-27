@@ -20,6 +20,22 @@ if(!require("openxlsx")){
   install.packages("openxlsx")
   require("openxlsx")
 }
+if(!require("htmltab")){
+  install.packages("htmltab")
+  require("htmltab")
+}
+if(!require("tabulizer")){
+  install.packages("tabulizer")
+  require("tabulizer")
+}
+if(!require("stringr")){
+  install.packages("stringr")
+  require("stringr")
+}
+if(!require("ggrepel")){
+  install.packages("ggrepel")
+  require("ggrepel")
+}
 
 
 source("../../util/functions.R")
@@ -39,10 +55,10 @@ source("../../util/functions.R")
 ```{r finalIF, echo=FALSE}
 finalmpactFactors <-  read.excel(file = "../../data/exerciseData.xlsx", sheetName = "preliminaryImpactFactors")
 finalmpactFactorsList <- as.character(finalmpactFactors$ImpactFactor)
-cols <- 3
+cols <- 2
 nrowPerCol <- ceiling(length(finalmpactFactorsList)/cols)
 impFac <- c(finalmpactFactorsList, rep("", each = cols * nrowPerCol - length(finalmpactFactorsList)))
-impFacTab <- cbind(impFac[1:nrowPerCol], impFac[(nrowPerCol+1):(2*nrowPerCol)], impFac[(2*nrowPerCol+1):(3*nrowPerCol)])
+impFacTab <- cbind(impFac[1:nrowPerCol], impFac[(nrowPerCol+1):(2*nrowPerCol)])
 kable(impFacTab)
 
 ```
@@ -89,11 +105,10 @@ sysGridData$ImpactFactor <- rownames(sysGridData)
 sysGridData <- sysGridData %>%
   select(ImpactFactor, ActivityScore, PassivityScore) %>%
   filter(!(ImpactFactor %in% c("PassivityScore")))
-  
-library(ggrepel)
+
 
 sysGridData %>% 
-  ggplot(aes(ActivityScore, PassivityScore, label=ImpactFactor)) +
+  ggplot(aes(PassivityScore, ActivityScore, label=ImpactFactor)) +
   geom_point() +
   geom_hline(aes(yintercept = mean(PassivityScore))) +
   geom_vline(aes(xintercept = mean(ActivityScore))) +

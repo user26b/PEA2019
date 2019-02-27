@@ -1,6 +1,5 @@
 ---
 title: "Exercise1"
-author: "Dario Pedolin"
 date: "26 2 2019"
 output: pdf_document
 ---
@@ -31,7 +30,10 @@ if(!require("stringr")){
   install.packages("stringr")
   require("stringr")
 }
-
+if(!require("ggrepel")){
+  install.packages("ggrepel")
+  require("ggrepel")
+}
 
 source("../../util/functions.R")
 
@@ -51,7 +53,8 @@ source("../../util/functions.R")
 ### Guiding questions
 	* Which impact factors and interrelations among them determine…
 	  * The penetration of different types of e-bikes and battery technologies on the EU market?
-	  * How the adoption of e-bikes changes the mobility behavior and what modes of transport are being replaced (substitution) to which extent?
+	  * How the adoption of e-bikes changes the mobility behavior?
+	  * What modes of transport are being replaced (substitution) to which extent?
 	  * in Europe in the year 2050.
 	* What scenarios can result from different constellations of the identified impact factors?
 	
@@ -210,9 +213,14 @@ kable(factorsPrimEnergyGHGPotential, caption = "Factors Primary Energy and GHG P
 Source: Verbreitung und Auswirkungen von E-Bikes in der Schweiz: http://www.news.admin.ch/NSBSubscriber/message/attachments/36764.pdf, Figure 2-15 page 49
 
 
+\newpage
+```{r printKnowledge_effectEBikeVSregularBike, echo=FALSE, paged.print=TRUE}
+effectEBikeVSregularBike_tab <- effectEBikeVSregularBike %>% 
+  select(-FahrradTouren)
+names(effectEBikeVSregularBike_tab) <- gsub("Arbeitsweg", "", names(effectEBikeVSregularBike_tab), fixed=TRUE)
 
-```{r printKnowledge_effectEBikeVSregularBike, echo=FALSE}
-kable(effectEBikeVSregularBike, caption = "Effect of EBike for commuting on regular bike")
+kable(effectEBikeVSregularBike_tab, caption = "Effect of EBike for commuting on regular bike (% Answers)")
+
 ```
 
 Source: Verbreitung und Auswirkungen von E-Bikes in der Schweiz: http://www.news.admin.ch/NSBSubscriber/message/attachments/36764.pdf, Figure 3-45, 3-46 page 105, 106
@@ -281,7 +289,7 @@ Schwegler, R., Iten, R., Spescha, G., & Schäppi, B. (2015). Umfrage Grüne Wirt
 ### preliminary identification:
 ```{r prelimIF, echo=FALSE}
 # load csv and write its content to excel
-if(TRUE & file.exists("../../data/prelimImpactFactors.csv")){
+if(FALSE & file.exists("../../data/prelimImpactFactors.csv")){
   prelimImpactFactors <- read.csv("../../data/prelimImpactFactors.csv", stringsAsFactors = FALSE)
   prelimImpactFactors$Indicator <- NA
   prelimImpactFactors$Current_Stat <- NA
@@ -331,7 +339,6 @@ kable(finalmpactFactors, caption="Description of seleceted impact factors")
 
 \newpage	
 ## 2.2 Impact assessment
-	m x m matrix of direct impacts
 	
 ```{r updateImpactMatrix, echo=FALSE, warning=FALSE}
 
@@ -420,12 +427,11 @@ for(i in 1: length(shortNames)){
 names(impactM) <- sNames
 
 # kable(impactM, caption = "Impact Factor matrix")
-
-
 if(!require("kableExtra")){
   install.packages("kableExtra")
   require("kableExtra")
 }
+
 kable(impactM, caption = "Impact Factor matrix", "latex", booktabs = T, escape = F, col.names = linebreak(gsub(" ", "\n",names(impactM)))) %>%
   kable_styling(font_size = 5) %>%
 landscape()
@@ -448,10 +454,10 @@ sysGridData <- sysGridData %>%
   select(ImpactFactor, ActivityScore, PassivityScore) %>%
   filter(!(ImpactFactor %in% c("PassivityScore")))
   
-library(ggrepel)
+
 
 sysGridData %>% 
-  ggplot(aes(ActivityScore, PassivityScore, label=ImpactFactor)) +
+  ggplot(aes(PassivityScore, ActivityScore, label=ImpactFactor)) +
   geom_point() +
   geom_hline(aes(yintercept = mean(PassivityScore))) +
   geom_vline(aes(xintercept = mean(ActivityScore))) +
