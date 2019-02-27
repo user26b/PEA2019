@@ -19,7 +19,18 @@ if(!require("openxlsx")){
   install.packages("openxlsx")
   require("openxlsx")
 }
-
+if(!require("htmltab")){
+  install.packages("htmltab")
+  require("htmltab")
+}
+if(!require("tabulizer")){
+  install.packages("tabulizer")
+  require("tabulizer")
+}
+if(!require("stringr")){
+  install.packages("stringr")
+  require("stringr")
+}
 
 
 source("../../util/functions.R")
@@ -49,10 +60,218 @@ source("../../util/functions.R")
 	* What factors could lead to a rebound effect?
 
 ### Knowledge base
-	-
-	-
+```{r loadSomeData, echo=FALSE, warning=FALSE}
+if(FALSE){
+  
+  # Annual statistics velosuisse:
+  # http://www.velosuisse.ch/de/statistik_aktuell.html
+  velosuisseNeuverkaeufe <- extract_tables("http://www.velosuisse.ch/files/Veloverkauf-Statistik_2017.pdf")
+  velosuisseGesamtmarkt <- as.data.frame(velosuisseNeuverkaeufe[[1]][,c(2,3,9)])
+  names(velosuisseGesamtmarkt) <- c("Segment", "Total", "Diff")
+  write.excel(data = velosuisseGesamtmarkt, file = "../../data/knowledgebase.xlsx", sheetName = "velosuisseGesamtmarkt", append = TRUE, overwrite = TRUE)
+  
+  
+  # Verbreitung und Auswirkungen von E-Bikes in der Schweiz:
+  # http://www.news.admin.ch/NSBSubscriber/message/attachments/36764.pdf
+  # Abbildung 2-15 page 49
+  distributionEffectsEBikesCH <- extract_tables("http://www.news.admin.ch/NSBSubscriber/message/attachments/36764.pdf")
+  factorsPrimEnergyGHGPotential <- as.data.frame(distributionEffectsEBikesCH[[24]])
+  factorsPrimEnergyGHGPotential[,2:3] <- apply(factorsPrimEnergyGHGPotential[,2:3], FUN=as.numeric, MARGIN = 2)
+  names(factorsPrimEnergyGHGPotential) <- c("mode", "primary energy [MJ equ. per pkm]", "GHG potential [CO2 eq. per pkm]")
+  write.excel(data = factorsPrimEnergyGHGPotential[c(-1,-2),], file = "../../data/knowledgebase.xlsx", sheetName = "factorsPrimEnergyGHGPotential", append = TRUE, overwrite = TRUE)
+  
+  # Abbildung 3-45, 3-46 page 105, 106
+  effectEBikeVSregularBike <- data.frame(group = c("viel seltener", "seltener", "etwa gleich oft", "oefter", "viel oefter", "nie genutzt"),
+                                         FahrradTouren = c(0.44, .11, .06,.02,0.03,.34),
+                                         AutoArbeitsweg = c(0.32,.36, .12,.01, 0, .19),
+                                         MotorradArbeitsweg = c(.34,.25, .19, 0, 0, .22),
+                                         KleinmotorradArbeitsweg = c(.25,.19,.13,0,0,.44),
+                                         MofaArbeitsweg = c(.2,.1,.1,0, 0,.6),
+                                         Bike = c(.37,.25,.13,.01,0.01,.23),
+                                         Walk = c(.13,.15,.25,.02,0,.44),
+                                         OeV = c(.22,.26,.23,.01,.02,.25))
+  write.excel(data = effectEBikeVSregularBike, file = "../../data/knowledgebase.xlsx", sheetName = "effectEBikeVSregularBike", append = TRUE, overwrite = TRUE)
+  
+  
+  # Webpage European Cyclist Federation (ECF): https://ecf.com/
+  ecfCapitalCities <- htmltab("https://ecf.com/resources/cycling-facts-and-figures/capital-cities", which = "/html/body/div[2]/div[3]/div/div[2]/div/section/div/div[2]/div/div[1]/div[1]")
+  names(ecfCapitalCities) <- gsub("\\.*$", "", make.names(names(ecfCapitalCities)))
+  write.excel(data = ecfCapitalCities, file = "../../data/knowledgebase.xlsx", sheetName = "ecfCapitalCities", append = TRUE, overwrite = TRUE)
+  
+  
+  # blocked by admin, pdf not well foramtted
+  # European e-bike market outlook:
+  # http://www.biketaiwan.com/resource/article/6/157/article-08.pdf
+  # euEBikeOutlook <- extract_tables("http://www.biketaiwan.com/resource/article/6/157/article-08.pdf")
+  # euBike <- as.data.frame()
+  
+  
+  # broken link
+  # European bicycle market (2016 edition): 
+  # http://www.conebi.eu/wpcontent/uploads/2016/09/European-Bicycle-Industry-and-Market- Profile-2016-with-2015-data-.pdf
+  # euBikeMarket2016 <- extract_tables("http://www.conebi.eu/wpcontent/uploads/2016/09/European-Bicycle-Industry-and-Market- Profile-2016-with-2015-data-.pdf")
+
+ 
+  # European bicycle market analysis 2015:
+  # https://ecf.com/sites/ecf.com/files/CONEBI%20market%20report%20analysis%202016_1.pdf
+  # Table 1 page 17
+  ecfMarkteAnalysis <- extract_tables("https://ecf.com/sites/ecf.com/files/CONEBI%20market%20report%20analysis%202016_1.pdf")
+  ecfMarketEU <- as.data.frame(ecfMarkteAnalysis[[2]][c(-1,-2,-3),c(1,2,3,5,8)], stringsAsFactors = FALSE)
+  names(ecfMarketEU) <- paste0(ecfMarkteAnalysis[[2]][1,],ecfMarkteAnalysis[[2]][2,],ecfMarkteAnalysis[[2]][3,])[c(-5,-6,-8,-9)]
+  ecfMarketEU[,2:5] <- apply(ecfMarketEU[,2:5], FUN = gsub, MARGIN = 2, pattern = " ", replacement = "")
+  ecfMarketEU[,2:5] <- apply(ecfMarketEU[,2:5], FUN = as.numeric, MARGIN = 2)
+  write.excel(data = ecfMarketEU, file = "../../data/knowledgebase.xlsx", sheetName = "ecfMarketEU", append = TRUE, overwrite = TRUE)
+  
+  
+  # broken link
+  # globalEBikeMarket: <- extract_tables("http://www.insg.org/docs/INSG_Insight_23_Global_Ebike_Market.pdf")
+  
+  
+  # Electrification of road transport – an analysis of the economic performance of electric twowheelers:
+  # https://dspace.library.uu.nl/bitstream/handle/1874/275936/Thesis%20P.W.K.%20Dekker%2012%20May%202013.pdf?sequence=1
+  # Table 10 page 50
+  economicPerformance <- extract_tables("https://dspace.library.uu.nl/bitstream/handle/1874/275936/Thesis%20P.W.K.%20Dekker%2012%20May%202013.pdf?sequence=1")
+  pricesConventionalBike <- as.data.frame(apply(economicPerformance[[20]][c(-1,-2),], FUN = as.numeric, MARGIN = 2))[,c(1,3,5,7,9)]
+  names(pricesConventionalBike) <- c("Year",paste0(economicPerformance[[20]][1,],economicPerformance[[20]][2,])[c(2,4,6,8)])
+  write.excel(data = pricesConventionalBike, file = "../../data/knowledgebase.xlsx", sheetName = "pricesConventionalBike", append = TRUE, overwrite = TRUE)
+  
+  #  Table 12, 13 page 50 -52
+  priceBatteryPower <- as.data.frame(economicPerformance[[21]][c(-1,-2),],stringsAsFactors = FALSE)
+  names(priceBatteryPower) <- paste0(economicPerformance[[21]][1,],economicPerformance[[21]][2,])
+  priceBatteryPower$Year <- 2011
+  priceBatteryPower2012 <- as.data.frame(cbind(Year = 2012, economicPerformance[[22]]),stringsAsFactors = FALSE)
+  names(priceBatteryPower2012) <- names(priceBatteryPower) 
+  priceBatteryPower20112012 <- rbind(priceBatteryPower2012, priceBatteryPower)
+  priceBatteryPower20112012$Year <- as.numeric(priceBatteryPower20112012$Year)
+  priceBatteryPower20112012$`Price€` <- as.numeric(priceBatteryPower20112012$`Price€`)
+  priceBatteryPower20112012$`Battery powerkWh` <- as.numeric(priceBatteryPower20112012$`Battery powerkWh`)
+  write.excel(data = priceBatteryPower20112012, file = "../../data/knowledgebase.xlsx", sheetName = "priceBatteryPower20112012", append = TRUE, overwrite = TRUE)
+  
+  
+  # broken link
+  # Langzeitprofil der E-Bike-Käuferschaft in Basel:
+  # LangzeitprofilEBikeBasel <- extract_tables("https://www.newride.ch/documents/forschung/NR_BerichtLangzeitprofil2012_EBike_2012_08_28.pdf")
+  
+  
+  # Bundesamt für Statistik, & Bundesamt für Raumplanung. (2012). Mobilität in der Schweiz, Ergebnisse des Mikrozensus Mobilität und Verkehr 2010.
+  download.file("https://www.bfs.admin.ch/bfsstatic/dam/assets/291639/master", destfile = "../../data/knowledgebase.xlsx")
+
+}
+
+factorsPrimEnergyGHGPotential <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "factorsPrimEnergyGHGPotential")
+
+effectEBikeVSregularBike <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "effectEBikeVSregularBike")
+
+CHMarket <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "velosuisseGesamtmarkt") %>% 
+  filter(Segment != "" & Total != "") %>% 
+  mutate(Total = gsub("'", "", Total, fixed=TRUE),
+         Diff = gsub("'", "", Diff, fixed=TRUE),
+         Total2016 = as.numeric(str_split_fixed(Total, " ", 2)[,1]),
+         Total2017 = as.numeric(str_split_fixed(Total, " ", 2)[,2]),
+         DiffAbsolut = as.numeric(str_split_fixed(Diff, " ", 2)[,1])) 
+
+ecfCapitalCities <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "ecfCapitalCities")
+
+ecfMarketEU <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "ecfMarketEU")
+
+
+mikrozensusCHTagesdistanz <- read.excel(file =  "../../data/MikrozensusMobilitaet.xlsx", sheetName = "Tagesdistanz")[c(-1,-2,-3),c(2,3,4)] %>% 
+    fill(X2) %>%
+  mutate(mode = X2,
+         goal = X3,
+         km = as.numeric(X4)) %>% 
+  select(mode, goal, km)
+
+priceBatteryPower20112012 <-  read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "priceBatteryPower20112012") %>% 
+  mutate(Battery.powerkWh = ifelse(Battery.powerkWh > 100, Battery.powerkWh/1000, Battery.powerkWh))
+
+
+pricesConventionalBike <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "pricesConventionalBike")
+```
+
+
+\includegraphics[page=126,width=\paperwidth]{../../exercise1/knowledge_base/Verbreitung_Auswirkung_EBikes_CH.pdf}
+
+Source: Verbreitung und Auswirkungen von E-Bikes in der Schweiz: http://www.news.admin.ch/NSBSubscriber/message/attachments/36764.pdf
+
+
+```{r printKnowledge_CHMarket, echo=FALSE}
+kable(CHMarket, caption = "CH Market 2016 - 2017")
+```
+
+Source: Annual statistics velosuisse: http://www.velosuisse.ch/de/statistik_aktuell.html
+
+
+
+```{r printKnowledge_factorsPrimEnergyGHGPotential, echo=FALSE}
+kable(factorsPrimEnergyGHGPotential, caption = "Factors Primary Energy and GHG Potential")
+```
+
+Source: Verbreitung und Auswirkungen von E-Bikes in der Schweiz: http://www.news.admin.ch/NSBSubscriber/message/attachments/36764.pdf, Figure 2-15 page 49
+
+
+
+```{r printKnowledge_effectEBikeVSregularBike, echo=FALSE}
+kable(effectEBikeVSregularBike, caption = "Effect of EBike for commuting on regular bike")
+```
+
+Source: Verbreitung und Auswirkungen von E-Bikes in der Schweiz: http://www.news.admin.ch/NSBSubscriber/message/attachments/36764.pdf, Figure 3-45, 3-46 page 105, 106
+
+
+
+```{r printKnowledge_ecfCapitalCities, echo=FALSE}
+kable(ecfCapitalCities, caption = "European Cycling Federation EU capitals")
+```
+
+Source: Webpage European Cyclist Federation (ECF): https://ecf.com/resources/cycling-facts-and-figures/capital-cities
+
+
+
+```{r printKnowledge_ecfMarketEU, echo=FALSE}
+kable(ecfMarketEU, caption = "European Cycling Federation EU market")
+```
+
+Source: European bicycle market analysis 2015: https://ecf.com/sites/ecf.com/files/CONEBI%20market%20report%20analysis%202016_1.pdf, Table 1 page 17
+
+
+
+```{r printKnowledge_pricesConventionalBike, echo=FALSE}
+kable(pricesConventionalBike, caption = "Prices conventional bikes")
+```
+
+Source: Electrification of road transport – an analysis of the economic performance of electric two- wheelers: https://dspace.library.uu.nl/bitstream/handle/1874/275936/Thesis%20P.W.K.%20Dekker%2012%20May%202013.pdf?sequence=1, Table 10 page 50
+
+
+
+```{r printKnowledge_priceBatteryPower20112012, echo=FALSE}
+kable(priceBatteryPower20112012, caption = "Prices and Battery Power 2011 - 2012")
+```
+
+Source: Electrification of road transport – an analysis of the economic performance of electric two- wheelers: https://dspace.library.uu.nl/bitstream/handle/1874/275936/Thesis%20P.W.K.%20Dekker%2012%20May%202013.pdf?sequence=1, Table 12, 13 page 50 -52
+
+
+	
+```{r printKnowledge_mikrozensusCHTagesdistanzSummary, echo=FALSE}
+
+mikrozensusCHTagesdistanzSummary <- mikrozensusCHTagesdistanz %>% 
+  group_by(mode) %>%
+  summarise(MeanDistKm = round(mean(km, na.rm=TRUE),2),
+            TotalDistKM = round(sum(km, na.rm=TRUE),1))
+
+kable(mikrozensusCHTagesdistanzSummary, caption = "Mikrozensus CH: Tagesdistanz")
+```
+
+Source: Bundesamt für Statistik, & Bundesamt für Raumplanung. (2012). Mobilität in der Schweiz, Ergebnisse des Mikrozensus Mobilität und Verkehr 2010. (http://www.portal-stat.admin.ch/mz10/files/de/00.xml), Sheet ''Tagesdistanz''
+
+
+
+Other Source:
+Schwegler, R., Iten, R., Spescha, G., & Schäppi, B. (2015). Umfrage Grüne Wirtschaft und Klima. Technischer Bericht zur Konzeptionierung. Bundesamt für Umwelt BAFU.
+
+	
 ### Actors to be involved
 	-
+	
 ### Target group
 	-
 
@@ -61,7 +280,7 @@ source("../../util/functions.R")
 ### preliminary identification:
 ```{r prelimIF, echo=FALSE}
 # load csv and write its content to excel
-if(FALSE & file.exists("../../data/prelimImpactFactors.csv")){
+if(TRUE & file.exists("../../data/prelimImpactFactors.csv")){
   prelimImpactFactors <- read.csv("../../data/prelimImpactFactors.csv", stringsAsFactors = FALSE)
   prelimImpactFactors$Indicator <- NA
   prelimImpactFactors$Current_Stat <- NA
@@ -92,10 +311,12 @@ kable(prelimImpFacTab, caption = "Names of preliminary impact factors")
 		
 
 	Impact factors structuring, clustering, relevance assessment
+	
 	-
 	-
 	
 	Impact factors selection
+	
 ```{r finalIF, echo=FALSE}
 finalmpactFactors <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "preliminaryImpactFactors")
 finalmpactFactorsList <- as.character(finalmpactFactors$ImpactFactor)
@@ -106,8 +327,7 @@ impFacTab <- cbind(impFac[1:nrowPerCol], impFac[(nrowPerCol+1):(2*nrowPerCol)], 
 # kable(impFacTab, caption = "Names of seleceted impact factors")
 kable(finalmpactFactors, caption="Description of seleceted impact factors")
 ```
-	-
-	-
+
 	
 ## 2.2 Impact assessment
 	m x m matrix of direct impacts
@@ -142,7 +362,7 @@ if(file.exists("../../data/exerciseData.xlsx") & ("impactMatrix" %in% excel.shee
   newIFNames <- finalmpactFactorsList[!(finalmpactFactorsList %in% rownames(oldImpactMatrix))]
   newImpactMatrix <- oldImpactMatrix[existingIFIndex, existingIFIndex]
   if(length(newImpactMatrix) == 0){
-    newImpactMatrix == mkeIFM(finalmpactFactorsList)
+    newImpactMatrix <- mkeIFM(finalmpactFactorsList)
   } else {
     for(newIF in newIFNames) {
       newData <- 0
@@ -190,7 +410,24 @@ PassivityScore <- colSums(impactM, na.rm = TRUE)
 impactM <- rbind.data.frame(impactM, PassivityScore= PassivityScore)
 names(impactM) <- gsub(".", " ", names(impactM), fixed=TRUE)
 
-kable(impactM)
+shortNames <- lapply(str_extract_all(names(impactM), boundary("word")), FUN = substr, start = 1, stop =1)
+sNames <- character(0)
+for(i in 1: length(shortNames)){
+  sNames <- c(sNames, paste0(shortNames[[i]], collapse = "."))
+}
+
+names(impactM) <- sNames
+
+# kable(impactM, caption = "Impact Factor matrix")
+
+
+if(!require("kableExtra")){
+  install.packages("kableExtra")
+  require("kableExtra")
+}
+kable(impactM, caption = "Impact Factor matrix", "latex", booktabs = T, escape = F, col.names = linebreak(gsub(" ", "\n",names(impactM)))) %>%
+  kable_styling(font_size = 5) %>%
+landscape()
 
 ```
 
@@ -223,6 +460,8 @@ sysGridData %>%
 ```
 
 ### Feedback loops
+
+
 ###System structure
 	
 	
