@@ -175,7 +175,7 @@ ecfCapitalCities <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName
 ecfMarketEU <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "ecfMarketEU")
 
 
-mikrozensusCHTagesdistanz <- read.excel(file =  "../../data/MikrozensusMobilitaet.xlsx", sheetName = "Tagesdistanz")[c(-1,-2,-3),c(2,3,4)] %>% 
+mikrozensusCHTagesdistanz <- read.excel(file =  "../../exercise1/knowledge_base/MikrozensusMobilitaet.xlsx", sheetName = "Tagesdistanz")[c(-1,-2,-3),c(2,3,4)] %>% 
     fill(X2) %>%
   mutate(mode = X2,
          goal = X3,
@@ -218,7 +218,7 @@ kable(effectEBikeVSregularBike, caption = "Effect of EBike for commuting on regu
 Source: Verbreitung und Auswirkungen von E-Bikes in der Schweiz: http://www.news.admin.ch/NSBSubscriber/message/attachments/36764.pdf, Figure 3-45, 3-46 page 105, 106
 
 
-
+\newpage
 ```{r printKnowledge_ecfCapitalCities, echo=FALSE}
 kable(ecfCapitalCities, caption = "European Cycling Federation EU capitals")
 ```
@@ -242,7 +242,7 @@ kable(pricesConventionalBike, caption = "Prices conventional bikes")
 Source: Electrification of road transport – an analysis of the economic performance of electric two- wheelers: https://dspace.library.uu.nl/bitstream/handle/1874/275936/Thesis%20P.W.K.%20Dekker%2012%20May%202013.pdf?sequence=1, Table 10 page 50
 
 
-
+\newpage
 ```{r printKnowledge_priceBatteryPower20112012, echo=FALSE}
 kable(priceBatteryPower20112012, caption = "Prices and Battery Power 2011 - 2012")
 ```
@@ -250,10 +250,11 @@ kable(priceBatteryPower20112012, caption = "Prices and Battery Power 2011 - 2012
 Source: Electrification of road transport – an analysis of the economic performance of electric two- wheelers: https://dspace.library.uu.nl/bitstream/handle/1874/275936/Thesis%20P.W.K.%20Dekker%2012%20May%202013.pdf?sequence=1, Table 12, 13 page 50 -52
 
 
-	
+\newpage	
 ```{r printKnowledge_mikrozensusCHTagesdistanzSummary, echo=FALSE}
 
 mikrozensusCHTagesdistanzSummary <- mikrozensusCHTagesdistanz %>% 
+  filter(!grepl("Anzahl", mode, fixed=TRUE)) %>% 
   group_by(mode) %>%
   summarise(MeanDistKm = round(mean(km, na.rm=TRUE),2),
             TotalDistKM = round(sum(km, na.rm=TRUE),1))
@@ -275,7 +276,7 @@ Schwegler, R., Iten, R., Spescha, G., & Schäppi, B. (2015). Umfrage Grüne Wirt
 ### Target group
 	-
 
-
+\newpage
 ## 2.1 Impact factors
 ### preliminary identification:
 ```{r prelimIF, echo=FALSE}
@@ -328,7 +329,7 @@ impFacTab <- cbind(impFac[1:nrowPerCol], impFac[(nrowPerCol+1):(2*nrowPerCol)], 
 kable(finalmpactFactors, caption="Description of seleceted impact factors")
 ```
 
-	
+\newpage	
 ## 2.2 Impact assessment
 	m x m matrix of direct impacts
 	
@@ -464,7 +465,7 @@ sysGridData %>%
 
 ###System structure
 	
-	
+\newpage	
 ## 3.1 Future level definition
 ## 3.2 Consistency assessment
 ## 3.3 Scenario construction
