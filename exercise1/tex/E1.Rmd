@@ -473,7 +473,85 @@ sysGridData %>%
 	
 \newpage	
 ## 3.1 Future level definition
+
+Goal: 3 future levels (ni = 1,2,3) for each impact factor d_i
+
+ * 1 future level outlining trend extrapolation
+ * Two future levels outlining extreme developments (min. vs. max.)
+ 
+```{r levelDefinitions, echo=FALSE}
+impactFactorLevels <- finalmpactFactors %>% 
+  mutate(trend = NA,
+         min = NA,
+         max = NA
+         )
+if(file.exists("../../data/exerciseData.xlsx") & ("impactFactorLevels" %in% excel.sheets(dataXlsxName))){
+  oldImpactFactorLevels <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactFactorLevels")
+  newImpactFactorLevels <- impactFactorLevels[!(impactFactorLevels$ImpactFactor %in% oldImpactFactorLevels$ImpactFactor),]
+  remainingImpactFactorLevels <- oldImpactFactorLevels[oldImpactFactorLevels$ImpactFactor %in% impactFactorLevels$ImpactFactor,]
+  
+  impactFactorLevels <- rbind(remainingImpactFactorLevels, newImpactFactorLevels)
+  write.excel(impactFactorLevels, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorLevels", append = TRUE, overwrite = TRUE, rNames = FALSE )
+} else {
+  write.excel(impactFactorLevels, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorLevels", append = TRUE, rNames = FALSE )
+}
+
+impactFactorLevels <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactFactorLevels")
+
+kable(impactFactorLevels, caption = "Description of impact factor levels")
+```
+
 ## 3.2 Consistency assessment
+```{r consostencyAssessment, echo=FALSE}
+
+impactFactorLevelsLong <- impactFactorLevels %>% 
+  select(ImpactFactor, trend, min, max) %>%
+  gather(level, value, -ImpactFactor) %>% 
+  arrange(ImpactFactor)
+
+ifColsNames <- paste(impactFactorLevelsLong$ImpactFactor, impactFactorLevelsLong$value, sep="_")
+  ifCols <- data.frame(matrix(rep(rep(NA, each=length(ifColsNames)), each=length(ifColsNames)), ncol=length(ifColsNames)))
+  names(ifCols) <- ifColsNames
+  
+impactFactorConsistency <- impactFactorLevelsLong[,c("ImpactFactor", "value")] %>% 
+  bind_cols(ifCols)
+
+if(file.exists("../../data/exerciseData.xlsx") & ("impactFactorConsistency" %in% excel.sheets(dataXlsxName))){
+  
+
+  oldImpactFactorConsistency <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency")
+  
+ 
+  
+  for(i in 1:nrow(impactFactorConsistency)){
+    for(j in 1:ncol(impactFactorConsistency)){
+      impactFactorConsistency[1:i,j] <- NA
+      impF <-  impactFactorConsistency[i,]$ImpactFactor
+      val <- impactFactorConsistency[i,]$value
+      iOldCindex <- which(oldImpactFactorConsistency$ImpactFactor == impF & oldImpactFactorConsistency$value == val)
+      jOldCindex <- which(names(oldImpactFactorConsistency) == names(impactFactorConsistency[j]))
+      if(length(iOldCindex) > 0 & length(jOldCindex) > 0){
+        impactFactorConsistency[i,j] <- oldImpactFactorConsistency[iOldCindex, jOldCindex]
+      }
+    }
+  }
+  write.excel(impactFactorConsistency, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency", append = TRUE, overwrite = TRUE, rNames = FALSE )
+  
+} else {
+write.excel(impactFactorConsistency, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency", append = TRUE, rNames = FALSE )
+}
+
+impactFactorConsistency <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency")
+```
+
 ## 3.3 Scenario construction
 ## 4.1 Scenario selection
 ## 4.2 Scenario description and interpretation
+
+```{r scenarioDescription, echo=FALSE}
+scenarioDescription <- data.frame(Parameter = c("Market penetration", "E-bike transport", "Battery technology", "Other transport"),
+                                  PhysicalUnit = c("Number of e-bikes sold annually [no. per year]", "Kilometers driven per e-bike annually [km per year]", "Share of different battery technologies used in e-bikes sold annually [% per year]", "Kilometers driven by other means of transport (annually) [km per year]"), stringsAsFactors = FALSE)
+
+
+kable(scenarioDescription, caption="Information for scenarios")
+```
