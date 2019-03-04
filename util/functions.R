@@ -115,7 +115,7 @@ read.excel <- function( file, sheetName = FALSE){
     sheetName <- wb_sheets[1]
   }
   if(!(sheetName %in% names(wb))){
-    stop(paste0("Das Blatt '", sheet, "' wurde in der Datei '", file , "' nicht gefunden."))
+    stop(paste0("Das Blatt '", sheetName, "' wurde in der Datei '", file , "' nicht gefunden."))
   }
   value <- read.xlsx(wb, sheet = sheetName, detectDates = TRUE)
   
