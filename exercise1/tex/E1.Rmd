@@ -61,6 +61,8 @@ source("../../util/functions.R")
 	By the way:
 	* What other consequences could a large scale adoption of e-bikes have?
 	* What factors could lead to a rebound effect?
+	
+
 
 ### Knowledge base
 ```{r loadSomeData, echo=FALSE, warning=FALSE}
@@ -327,14 +329,14 @@ kable(prelimImpFacTab, caption = "Names of preliminary impact factors")
 	Impact factors selection
 	
 ```{r finalIF, echo=FALSE}
-finalmpactFactors <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "preliminaryImpactFactors")
-finalmpactFactorsList <- as.character(finalmpactFactors$ImpactFactor)
+finalImpactFactors <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "finalImpactFactors")
+finalImpactFactorsList <- as.character(finalImpactFactors$ImpactFactor)
 cols <- 3
-nrowPerCol <- ceiling(length(finalmpactFactorsList)/cols)
-impFac <- c(finalmpactFactorsList, rep(NA, each = cols * nrowPerCol - length(finalmpactFactorsList)))
+nrowPerCol <- ceiling(length(finalImpactFactorsList)/cols)
+impFac <- c(finalImpactFactorsList, rep(NA, each = cols * nrowPerCol - length(finalImpactFactorsList)))
 impFacTab <- cbind(impFac[1:nrowPerCol], impFac[(nrowPerCol+1):(2*nrowPerCol)], impFac[(2*nrowPerCol+1):(3*nrowPerCol)])
 # kable(impFacTab, caption = "Names of seleceted impact factors")
-kable(finalmpactFactors, caption="Description of seleceted impact factors")
+kable(finalImpactFactors[, c("ImpactFactor", "Indicator", "Current_Stat")], caption="Description of seleceted impact factors")
 ```
 
 \newpage	
@@ -353,11 +355,11 @@ mkeIFM <- function(IFList){
 }
 
 
-finalmpactFactorsList <- as.character(finalmpactFactors$ImpactFactor)
+finalImpactFactorsList <- as.character(finalImpactFactors$ImpactFactor)
 
 dataXlsxName <- "../../data/exerciseData.xlsx"
 if(file.exists(dataXlsxName) & !("impactMatrix" %in% excel.sheets(dataXlsxName))){
-  impactMatrix <- mkeIFM(finalmpactFactorsList)
+  impactMatrix <- mkeIFM(finalImpactFactorsList)
   write.excel(data = impactMatrix, file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix", append = TRUE, rNames = TRUE)
 }
 
@@ -366,11 +368,11 @@ if(file.exists("../../data/exerciseData.xlsx") & ("impactMatrix" %in% excel.shee
   oldImpactMatrix <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix")
   rownames(oldImpactMatrix) <- oldImpactMatrix[,1]
   oldImpactMatrix <- oldImpactMatrix[,-1]
-  existingIFIndex <- which(rownames(oldImpactMatrix) %in% finalmpactFactorsList)
-  newIFNames <- finalmpactFactorsList[!(finalmpactFactorsList %in% rownames(oldImpactMatrix))]
+  existingIFIndex <- which(rownames(oldImpactMatrix) %in% finalImpactFactorsList)
+  newIFNames <- finalImpactFactorsList[!(finalImpactFactorsList %in% rownames(oldImpactMatrix))]
   newImpactMatrix <- oldImpactMatrix[existingIFIndex, existingIFIndex]
   if(length(newImpactMatrix) == 0){
-    newImpactMatrix <- mkeIFM(finalmpactFactorsList)
+    newImpactMatrix <- mkeIFM(finalImpactFactorsList)
   } else {
     for(newIF in newIFNames) {
       newData <- 0
@@ -433,7 +435,7 @@ if(!require("kableExtra")){
 }
 
 kable(impactM, caption = "Impact Factor matrix", "latex", booktabs = T, escape = F, col.names = linebreak(gsub(" ", "\n",names(impactM)))) %>%
-  kable_styling(font_size = 5) %>%
+  # kable_styling(font_size = 8) %>%
 landscape()
 
 ```
@@ -480,7 +482,7 @@ Goal: 3 future levels (ni = 1,2,3) for each impact factor d_i
  * Two future levels outlining extreme developments (min. vs. max.)
  
 ```{r levelDefinitions, echo=FALSE}
-impactFactorLevels <- finalmpactFactors %>% 
+impactFactorLevels <- finalImpactFactors %>% 
   mutate(trend = NA,
          min = NA,
          max = NA
@@ -501,6 +503,29 @@ impactFactorLevels <- read.excel(file = "../../data/exerciseData.xlsx", sheetNam
 kable(impactFactorLevels, caption = "Description of impact factor levels")
 ```
 
+
+### E-Bike Prices
+
+```{r extrapolPrices, eho=FALSE}
+
+expolPrices <- priceBatteryPower20112012 %>% 
+  group_by(Year) %>% 
+  summarise(N = n(),
+            amPrice = median(PriceEur, na.rm = TRUE),
+            sdPrice = sd(PriceEur, na.rm = TRUE),
+            sePrice = sdPrice/N^0.5,
+            amPower = mean(Battery.powerkWh, na.rm = TRUE),
+            sdPower = sd(Battery.powerkWh, na.rm = TRUE),
+            sePower = sdPower/N^0.5,
+            amPricePerPower = mean(Battery.powerkWh/PriceEur, na.rm = TRUE),
+            sdPricePerPower = sd(Battery.powerkWh/PriceEur, na.rm = TRUE),
+            sePricePerPower = sdPricePerPower/N^0.5) %>% 
+  select(Year, amPrice, amPricePerPower, sdPricePerPower)
+
+lmPricePower <- lm(data =priceBatteryPower20112012, PriceEur ~ Year)
+
+kable(expolPrices, caption="Development price per kWh")
+```
 ## 3.2 Consistency assessment
 ```{r consostencyAssessment, echo=FALSE}
 
@@ -548,10 +573,18 @@ impactFactorConsistency <- read.excel(file = "../../data/exerciseData.xlsx", she
 ## 4.1 Scenario selection
 ## 4.2 Scenario description and interpretation
 
-```{r scenarioDescription, echo=FALSE}
-scenarioDescription <- data.frame(Parameter = c("Market penetration", "E-bike transport", "Battery technology", "Other transport"),
-                                  PhysicalUnit = c("Number of e-bikes sold annually [no. per year]", "Kilometers driven per e-bike annually [km per year]", "Share of different battery technologies used in e-bikes sold annually [% per year]", "Kilometers driven by other means of transport (annually) [km per year]"), stringsAsFactors = FALSE)
+### Requirements
 
+```{r scenrioRequirements, echo=FALSE}
+scenarioInformation <- data.frame(
+  Parameter = c("Market penetration","E-bike transport","Battery technology","Other transport"),
+  Description = c("Market penetration", "Kilometers driven per e-bike annually","Share of different battery technologies used in e-bikes sold annually", "Kilometers driven by other means of transport (annually)"),
+  PhysicalUnit = c("[no. per year]", "[km per year]", "[% per year]", "[km per year]"))
 
-kable(scenarioDescription, caption="Information for scenarios")
+kable(scenarioInformation, caption = "Information requirements for scenarios")
 ```
+
+
+  * Impact factors and their dynamic relevance
+  * Final scenarios and their rationale (storyline)
+  * Parameters values indicated above for each scenario as a time series until 2050 (cf. Table above)
