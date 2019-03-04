@@ -500,13 +500,14 @@ if(file.exists("../../data/exerciseData.xlsx") & ("impactFactorLevels" %in% exce
 
 impactFactorLevels <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactFactorLevels")
 
-kable(impactFactorLevels, caption = "Description of impact factor levels")
+
+kable(impactFactorLevels[,c("ImpactFactor", "Indicator", "Current_Stat", "trend", "min","max")], caption = "Description of impact factor levels")
 ```
 
 
 ### E-Bike Prices
 
-```{r extrapolPrices, eho=FALSE}
+```{r extrapolPrices, echo=FALSE}
 
 expolPrices <- priceBatteryPower20112012 %>% 
   group_by(Year) %>% 
