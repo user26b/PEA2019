@@ -543,26 +543,24 @@ impactFactorConsistency <- impactFactorLevelsLong[,c("ImpactFactor", "value")] %
   bind_cols(ifCols)
 
 if(file.exists("../../data/exerciseData.xlsx") & ("impactFactorConsistency" %in% excel.sheets(dataXlsxName))){
-  
-
-  oldImpactFactorConsistency <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency")
-  
- 
-  
-  for(i in 1:nrow(impactFactorConsistency)){
-    for(j in 1:ncol(impactFactorConsistency)){
-      impactFactorConsistency[1:i,j] <- NA
-      impF <-  impactFactorConsistency[i,]$ImpactFactor
-      val <- impactFactorConsistency[i,]$value
-      iOldCindex <- which(oldImpactFactorConsistency$ImpactFactor == impF & oldImpactFactorConsistency$value == val)
-      jOldCindex <- which(names(oldImpactFactorConsistency) == names(impactFactorConsistency[j]))
-      if(length(iOldCindex) > 0 & length(jOldCindex) > 0){
-        impactFactorConsistency[i,j] <- oldImpactFactorConsistency[iOldCindex, jOldCindex]
-      }
-    }
-  }
-  write.excel(impactFactorConsistency, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency", append = TRUE, overwrite = TRUE, rNames = FALSE )
-  
+  # oldImpactFactorConsistency <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency")
+  # 
+  # 
+  # 
+  # for(i in 1:nrow(impactFactorConsistency)){
+  #   for(j in 1:ncol(impactFactorConsistency)){
+  #     impactFactorConsistency[1:i,j] <- NA
+  #     impF <-  impactFactorConsistency[i,]$ImpactFactor
+  #     val <- impactFactorConsistency[i,]$value
+  #     iOldCindex <- which(oldImpactFactorConsistency$ImpactFactor == impF & oldImpactFactorConsistency$value == val)
+  #     jOldCindex <- which(names(oldImpactFactorConsistency) == names(impactFactorConsistency[j]))
+  #     if(length(iOldCindex) > 0 & length(jOldCindex) > 0){
+  #       impactFactorConsistency[i,j] <- oldImpactFactorConsistency[iOldCindex, jOldCindex]
+  #     }
+  #   }
+  # }
+  # write.excel(impactFactorConsistency, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency", append = TRUE, overwrite = TRUE, rNames = FALSE )
+  # 
 } else {
 write.excel(impactFactorConsistency, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency", append = TRUE, rNames = FALSE )
 }
@@ -571,6 +569,27 @@ impactFactorConsistency <- read.excel(file = "../../data/exerciseData.xlsx", she
 ```
 
 ## 3.3 Scenario construction
+
+```{r levelSelection, echo=FALSE}
+
+impactFactorConsistent <- impactFactorConsistency %>% 
+  gather(ImpactFactor2, level, c(-ImpactFactor,-value)) %>%
+  filter(!is.na(level) & level >= 0) %>%
+  mutate(ImpactFactor2Name = str_split_fixed(ImpactFactor2, "_",2)[,1],
+         ImpactFactor2Level = str_split_fixed(ImpactFactor2, "_",2)[,2]) %>% 
+  select(ImpactFactor1 = ImpactFactor, ImpactFactor1Level = value, ImpactFactor2 = ImpactFactor2Name, ImpactFactor2Level, score = level)
+
+
+mostConsistent <- impactFactorConsistent %>%
+  arrange(score) %>% 
+  group_by(ImpactFactor1, ImpactFactor2) %>% 
+  summarise(level1 = first(ImpactFactor1Level),
+            level2 = first(ImpactFactor2Level))
+
+
+
+```
+
 ## 4.1 Scenario selection
 ## 4.2 Scenario description and interpretation
 
