@@ -359,33 +359,33 @@ finalImpactFactorsList <- as.character(finalImpactFactors$ImpactFactor)
 
 dataXlsxName <- "../../data/exerciseData.xlsx"
 if(file.exists(dataXlsxName) & !("impactMatrix" %in% excel.sheets(dataXlsxName))){
-  impactMatrix <- mkeIFM(finalImpactFactorsList)
+  impactMatrix <- mkeIFM(IFList = finalImpactFactorsList)
   write.excel(data = impactMatrix, file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix", append = TRUE, rNames = TRUE)
 }
 
-# write updatet matrix if there are new impactFactors
-if(file.exists("../../data/exerciseData.xlsx") & ("impactMatrix" %in% excel.sheets(dataXlsxName))){
-  oldImpactMatrix <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix")
-  rownames(oldImpactMatrix) <- oldImpactMatrix[,1]
-  oldImpactMatrix <- oldImpactMatrix[,-1]
-  existingIFIndex <- which(rownames(oldImpactMatrix) %in% finalImpactFactorsList)
-  newIFNames <- finalImpactFactorsList[!(finalImpactFactorsList %in% rownames(oldImpactMatrix))]
-  newImpactMatrix <- oldImpactMatrix[existingIFIndex, existingIFIndex]
-  if(length(newImpactMatrix) == 0){
-    newImpactMatrix <- mkeIFM(finalImpactFactorsList)
-  } else {
-    for(newIF in newIFNames) {
-      newData <- 0
-      newImpactMatrix <- cbind(newImpactMatrix, newData)
-      colnames(newImpactMatrix)[ncol(newImpactMatrix)] <- newIF
-      newImpactMatrix <- rbind(newImpactMatrix, newData)
-      rownames(newImpactMatrix)[nrow(newImpactMatrix)] <- newIF
-      newImpactMatrix[nrow(newImpactMatrix), ncol(newImpactMatrix)] <- NA
-    }
-  }
-  write.excel(data = newImpactMatrix, file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix", append = TRUE, overwrite = TRUE, rNames = TRUE)
-
-}
+# # write updatet matrix if there are new impactFactors
+# if(file.exists("../../data/exerciseData.xlsx") & ("impactMatrix" %in% excel.sheets(dataXlsxName))){
+#   oldImpactMatrix <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix")
+#   rownames(oldImpactMatrix) <- oldImpactMatrix[,1]
+#   oldImpactMatrix <- oldImpactMatrix[,-1]
+#   existingIFIndex <- which(rownames(oldImpactMatrix) %in% finalImpactFactorsList)
+#   newIFNames <- finalImpactFactorsList[!(finalImpactFactorsList %in% rownames(oldImpactMatrix))]
+#   newImpactMatrix <- oldImpactMatrix[existingIFIndex, existingIFIndex]
+#   if(length(newImpactMatrix) == 0){
+#     newImpactMatrix <- mkeIFM(finalImpactFactorsList)
+#   } else {
+#     for(newIF in newIFNames) {
+#       newData <- 0
+#       newImpactMatrix <- cbind(newImpactMatrix, newData)
+#       colnames(newImpactMatrix)[ncol(newImpactMatrix)] <- newIF
+#       newImpactMatrix <- rbind(newImpactMatrix, newData)
+#       rownames(newImpactMatrix)[nrow(newImpactMatrix)] <- newIF
+#       newImpactMatrix[nrow(newImpactMatrix), ncol(newImpactMatrix)] <- NA
+#     }
+#   }
+#   write.excel(data = impactMatrix, file = "../../data/exerciseData.xlsx", sheetName = "impactMatrix", append = TRUE, overwrite = TRUE, rNames = TRUE)
+# 
+# }
 ```
 
 ```{r impactMatrix, echo=FALSE, warning=FALSE}
