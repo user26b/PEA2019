@@ -159,8 +159,31 @@ if(FALSE){
   
   
   # Bundesamt für Statistik, & Bundesamt für Raumplanung. (2012). Mobilität in der Schweiz, Ergebnisse des Mikrozensus Mobilität und Verkehr 2010.
-  download.file("https://www.bfs.admin.ch/bfsstatic/dam/assets/291639/master", destfile = "../../data/knowledgebase.xlsx")
-
+  download.file("https://www.bfs.admin.ch/bfsstatic/dam/assets/291639/master", destfile = "../../data/MikrozensusMobilitaet.xlsx")
+  
+  
+  
+  download.file("https://www.bfs.admin.ch/bfsstatic/dam/assets/6046027/master", destfile = "../../data/AltersaufbauCH.xlsx")
+  altersverteilung <- data.frame()
+  for(sheetName in  2013:2017){
+    altersverteilungneu <- read.xlsx(xlsxFile = "../../data/AltersaufbauCH.xlsx", sheet = as.character(sheetName), rows = 9:94, cols = c(1,2,3), colNames = FALSE)
+    names(altersverteilungneu) <- c("Alter", "Maenner", "Frauen")
+    altersverteilungneu$Jahr = sheetName
+    altersverteilung <- rbind(altersverteilung, altersverteilungneu)
+  }
+  altersverteilung$Maenner <- as.numeric(gsub("(|)", "", altersverteilung$Maenner))
+  altersverteilung$Frauen <- as.numeric(gsub("(|)", "",  altersverteilung$Frauen))
+  altersverteilung <- altersverteilung %>% 
+    gather(Gender, N, c(-Jahr, -Alter)) %>% 
+    mutate(N = round(N * 1000,0)) %>% 
+    group_by(Jahr, Alter) %>% 
+    mutate(Total = sum(N, na.rm = TRUE)) %>% 
+    spread(Gender, N) %>% 
+    arrange(Jahr, Alter) %>% 
+    group_by(Jahr) %>% 
+    mutate(cumPct = cumsum(Total)/sum(Total)) %>% 
+    select(Jahr, Alter, Maenner, Frauen, Total, cumPct)
+  write.excel(data = altersverteilung, file = "../../data/knowledgebase.xlsx", sheetName = "altersverteilung20132017", append = TRUE, overwrite = TRUE)
 }
 
 factorsPrimEnergyGHGPotential <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "factorsPrimEnergyGHGPotential")
@@ -190,8 +213,9 @@ mikrozensusCHTagesdistanz <- read.excel(file =  "../../exercise1/knowledge_base/
 priceBatteryPower20112012 <-  read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "priceBatteryPower20112012") %>% 
   mutate(Battery.powerkWh = ifelse(Battery.powerkWh > 100, Battery.powerkWh/1000, Battery.powerkWh))
 
-
 pricesConventionalBike <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "pricesConventionalBike")
+
+altersverteilung <- read.excel(file = "../../data/knowledgebase.xlsx", sheetName = "altersverteilung20132017")
 ```
 
 
@@ -273,6 +297,25 @@ kable(mikrozensusCHTagesdistanzSummary, caption = "Mikrozensus CH: Tagesdistanz"
 ```
 
 Source: Bundesamt für Statistik, & Bundesamt für Raumplanung. (2012). Mobilität in der Schweiz, Ergebnisse des Mikrozensus Mobilität und Verkehr 2010. (http://www.portal-stat.admin.ch/mz10/files/de/00.xml), Sheet ''Tagesdistanz''
+
+
+\newpage	
+```{r printKnowledge_altersverteilungSummary, echo=FALSE}
+
+altersverteilungSummary <- altersverteilung %>%
+  group_by(Jahr) %>% 
+  summarise(unter50 = sum(ifelse(Alter <= 50, Total, 0)),
+         ueber50 = sum(ifelse(Alter > 50, Total, 0))) %>%
+  mutate(Total = unter50 + ueber50,
+         pctUeber50 = round(ueber50/Total * 100, 0))
+
+kable(altersverteilungSummary, caption = "Development proportion of population over 50 years old")
+
+```
+
+
+
+Source: Bundesamt für Statistik, & Bundesamt für Raumplanung. (2012). Altersaufbau der ständigen Wohnbevölkerung ab 15 Jahren, nach Migrationsstatus und Geschlecht, 2013-2017 . (https://www.bfs.admin.ch/bfs/de/home/statistiken/bevoelkerung/alterung.assetdetail.6046027.html)
 
 
 
@@ -504,8 +547,8 @@ impactFactorLevels <- read.excel(file = "../../data/exerciseData.xlsx", sheetNam
 kable(impactFactorLevels[,c("ImpactFactor", "Indicator", "Current_Stat", "trend", "min","max")], caption = "Description of impact factor levels")
 ```
 
+\newpage
 
-### E-Bike Prices
 
 ```{r extrapolPrices, echo=FALSE}
 
@@ -527,7 +570,90 @@ lmPricePower <- lm(data =priceBatteryPower20112012, PriceEur ~ Year)
 
 kable(expolPrices, caption="Development price per kWh")
 ```
+
+From:
+Electrification of road transport – an analysis of the economic performance of electric twowheelers:
+
+"We find that e-bike prices will decrease by 3% from €1614,- ± 674 in 2012 to €1561,- ± 609,- in 2025"
+
+
+```{r extrapoPrices2, echo = FALSE}
+CHFproEUR <- 1.14
+
+dekker <- data.frame(year = c(2012, 2025),
+                     CHF = c(1614 * CHFproEUR, 1561 * CHFproEUR),
+                     sdCHF = c(674 * CHFproEUR, 609 * CHFproEUR))
+
+dekkerTrend <- (dekker[2,2] - dekker[1,2])/13
+dekkerWorst <- 0
+dekkerBest <- (dekker[2,2]  - (dekker[1,2] + 0.5*dekker[1,3]))/13
+
+simEBikePrices <- data.frame(year = c(2012:2050)) %>% 
+  mutate(trendCHF = dekker[1,2] + dekkerTrend * (year - 2012),
+         worstCHF = dekker[1,2] + dekkerWorst * (year - 2012),
+         bestCHF = dekker[1,2] + dekkerBest * (year - 2012)) 
+
+
+```
+
+```{r extrapoPrices2Table, echo=FALSE}
+
+simEBikePricesTable <- simEBikePrices %>% 
+  filter(year %%  10 == 0)
+
+kable(simEBikePricesTable, caption = "Simulation linear trends price EBike")
+```
+
+
+```{r extrapoPrices2Plot, echo=FALSE, fig.cap="Simulation linear trends price EBike"}
+
+simEBikePrices %>% 
+  gather(level, value, -year) %>% 
+  ggplot(aes(year, value, color=level)) +
+  geom_path() +
+  expand_limits(y = 0) +
+  labs(y = "E Bike prices [CHF]")
+```
+
+\newpage
+
+
+```{r altersverteilungModel, echo=FALSE}
+
+lmMod <- lm(pctUeber50 ~ log(Jahr-2012), data=altersverteilungSummary)
+iCept <- lmMod$coefficients[1]
+slope <- lmMod$coefficients[2]
+se <- summary(lmMod)$coefficients[2,2]
+
+altersverteilungModelPredictions = data.frame(Jahr = 2013:2050) %>% 
+  mutate(AnteilUeber50_trend = iCept +  slope * log(Jahr-2012),
+         AnteilUeber50_min = iCept + (slope- 1.96*se) * log(Jahr-2012),
+         AnteilUeber50_max = iCept + (slope + 1.96*se) * log(Jahr-2012))
+
+```
+
+```{r printKnowledge_altersverteilungModelSummary, echo=FALSE}
+
+altersverteilungModelPredictionsSummary <- round(altersverteilungModelPredictions,0) %>%
+  filter(Jahr %% 10 == 0) 
+
+kable(altersverteilungModelPredictionsSummary, caption = "Prediction age distribution proportion over 50 [\\%]")
+
+```
+
+```{r printKnowledge_altersverteilungPredictionPlot, echo=FALSE, fig.cap="Prediction age distribution proportion over 50"}
+ggplot(altersverteilungModelPredictions) +
+  geom_path(aes(Jahr, AnteilUeber50_trend)) +
+  geom_path(aes(Jahr, AnteilUeber50_min)) +
+  geom_path(aes(Jahr, AnteilUeber50_max)) +
+  geom_point(aes(x=Jahr, y = pctUeber50), data=altersverteilungSummary, color="blue") +
+  labs(y="Anteil ueber 50 Jaehriger [%]")
+
+
+```
+
 ## 3.2 Consistency assessment
+
 ```{r consostencyAssessment, echo=FALSE}
 
 impactFactorLevelsLong <- impactFactorLevels %>% 
@@ -543,24 +669,24 @@ impactFactorConsistency <- impactFactorLevelsLong[,c("ImpactFactor", "value")] %
   bind_cols(ifCols)
 
 if(file.exists("../../data/exerciseData.xlsx") & ("impactFactorConsistency" %in% excel.sheets(dataXlsxName))){
-  # oldImpactFactorConsistency <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency")
-  # 
-  # 
-  # 
-  # for(i in 1:nrow(impactFactorConsistency)){
-  #   for(j in 1:ncol(impactFactorConsistency)){
-  #     impactFactorConsistency[1:i,j] <- NA
-  #     impF <-  impactFactorConsistency[i,]$ImpactFactor
-  #     val <- impactFactorConsistency[i,]$value
-  #     iOldCindex <- which(oldImpactFactorConsistency$ImpactFactor == impF & oldImpactFactorConsistency$value == val)
-  #     jOldCindex <- which(names(oldImpactFactorConsistency) == names(impactFactorConsistency[j]))
-  #     if(length(iOldCindex) > 0 & length(jOldCindex) > 0){
-  #       impactFactorConsistency[i,j] <- oldImpactFactorConsistency[iOldCindex, jOldCindex]
-  #     }
-  #   }
-  # }
-  # write.excel(impactFactorConsistency, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency", append = TRUE, overwrite = TRUE, rNames = FALSE )
-  # 
+  oldImpactFactorConsistency <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency")
+
+
+
+  for(i in 1:nrow(impactFactorConsistency)){
+    for(j in 1:ncol(impactFactorConsistency)){
+      impactFactorConsistency[1:i,j] <- NA
+      impF <-  impactFactorConsistency[i,]$ImpactFactor
+      val <- impactFactorConsistency[i,]$value
+      iOldCindex <- which(oldImpactFactorConsistency$ImpactFactor == impF & oldImpactFactorConsistency$value == val)
+      jOldCindex <- which(names(oldImpactFactorConsistency) == names(impactFactorConsistency[j]))
+      if(length(iOldCindex) > 0 & length(jOldCindex) > 0){
+        impactFactorConsistency[i,j] <- oldImpactFactorConsistency[iOldCindex, jOldCindex]
+      }
+    }
+  }
+  write.excel(impactFactorConsistency, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency", append = TRUE, overwrite = TRUE, rNames = FALSE )
+
 } else {
 write.excel(impactFactorConsistency, file = "../../data/exerciseData.xlsx", sheetName = "impactFactorConsistency", append = TRUE, rNames = FALSE )
 }
@@ -591,6 +717,15 @@ mostConsistent <- impactFactorConsistent %>%
 ```
 
 ## 4.1 Scenario selection
+
+```{r scenarioSelecetion, echo=FALSE}
+
+selectedScenarios <- read.excel(file = "../../data/exerciseData.xlsx", sheetName = "selectedScenarios")
+
+kable(selectedScenarios, caption="Impact Factor levels for the seleceted scenarios")
+```
+
+
 ## 4.2 Scenario description and interpretation
 
 ### Requirements
